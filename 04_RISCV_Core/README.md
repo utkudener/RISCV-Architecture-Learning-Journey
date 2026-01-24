@@ -10,14 +10,11 @@ This is the main directory for the 32-bit RISC-V processor implementation. The g
 - [ ] **Register File Interface:**
 - [ ] **Pipelining Logic:**
 
-## 🖥️ Visualization
-The current implementation utilizes Makerchip's visualization features to debug the datapath:
+## 📸 Simulation Results
 
-### Block Diagram & Register File
-![CPU Visualization](assets/cpu_viz.png)
+### 1. Program Counter (PC) Logic
+The waveform below demonstrates the sequential fetching logic. The Program Counter (`$pc`) increments by 4 bytes every cycle (`0`, `4`, `8`, `C`, `10`...) to fetch the next instruction correctly.
 
-### Signal Waveform
-![CPU Signals](assets/cpu_wave.png)
+![PC Waveform](assets/RISC-V_Core_PCWaveform.png)
 
----
 **Acknowledgement:** This project is based on the "Building a RISC-V CPU Core" course by Steve Hoover.
