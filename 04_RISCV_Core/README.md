@@ -1,22 +1,20 @@
-# RISC-V Architecture Learning Journey 🚀
+# RISC-V CPU Core (Work in Progress 🚧)
 
-This repository documents my journey of designing a RISC-V CPU Core from scratch using **TL-Verilog** on the **Makerchip** platform. The project progresses from basic logic gates to a fully functional, pipelined RISC-V processor.
+This is the main directory for the 32-bit RISC-V processor implementation. The goal is to build a fully pipelined CPU compliant with the RV32I instruction set.
 
-## 📂 Project Structure
+### 🛠️ Current Status
+- [x] **Testbench Setup:** Sums numbers 1 to 9 using Assembly.
+- [x] **Instruction Fetch (IF):** PC logic and Instruction Memory (IMem) implemented.
+- [ ] **Instruction Decode (ID):** (Next Step)
+- [ ] **ALU Implementation:**
+- [ ] **Register File Interface:**
+- [ ] **Pipelining Logic:**
 
-| Folder | Description |
-|--------|-------------|
-| **01_Basic_Logic_Gates** | Implementation of fundamental logic gates (AND, OR, XNOR, Full Adder). |
-| **02_Calculator_Lab** | Design of a calculator with basic ALU operations (Add, Sub, Mul, Div) and Mux logic. |
-| **03_Sequential_Logic** | Introduction to state and memory, including a Fibonacci Sequence generator. |
-| **04_RISCV_Core** | **(Main Project)** The development of the RISC-V CPU Core shell and pipeline implementation. |
+## 📸 Simulation Results
 
-## 🛠 Tools Used
-- **Language:** Transaction-Level Verilog (TL-Verilog)
-- **IDE/Platform:** [Makerchip.com](https://makerchip.com)
-- **Architecture:** RISC-V (RV32I Base Integer Instruction Set)
+### 1. Program Counter (PC) Logic
+The waveform below demonstrates the sequential fetching logic. The Program Counter (`$pc`) increments by 4 bytes every cycle (`0`, `4`, `8`, `C`, `10`...) to fetch the next instruction correctly.
 
-## ⚖️ Acknowledgement & License
-This project is based on the **"Building a RISC-V CPU Core"** course by **Steve Hoover**. The initial shell code, macro libraries, and visualization tools are provided by the course materials. 
+![PC Waveform](assets/RISC-V_Core_PCWaveform.png)
 
-My work focuses on implementing the logic, data path, and control signals within this provided framework.
+**Acknowledgement:** This project is based on the "Building a RISC-V CPU Core" course by Steve Hoover.
