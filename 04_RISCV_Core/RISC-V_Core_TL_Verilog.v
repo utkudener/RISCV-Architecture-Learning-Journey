@@ -57,7 +57,35 @@
    `READONLY_MEM($pc, $$instr[31:0])
    
    
+// ============================================
+   // STAGE 2: Instruction Decode (ID)
+   // ============================================
+   
+   // Instruction Type Decoding
+   // Based on the RISC-V Base Opcode Map (bits [6:2]), we identify the type of instruction.
+   // We use '==?' operator for wildcard matching (where 'x' means don't care).
 
+   // U-Type: LUI (01101), AUIPC (00101)
+   $is_u_instr = $instr[6:2] ==? 5'b0x101;
+   
+   // I-Type: Load (00000), Op-Imm (00100), JALR (11001), System (11100 - covered by 001x0 logic partially or added if needed)
+   $is_i_instr = $instr[6:2] ==? 5'b0000x || 
+                 $instr[6:2] ==? 5'b001x0 || 
+                 $instr[6:2] ==  5'b11001;
+   
+   // S-Type: Store (01000)
+   $is_s_instr = $instr[6:2] ==? 5'b0100x;
+   
+   // R-Type: Op (01100), Op-32 (01110), AMO (01011), Op-FP (10100)
+   $is_r_instr = $instr[6:2] ==? 5'b011x0 || 
+                 $instr[6:2] ==  5'b01011 || 
+                 $instr[6:2] ==  5'b10100;
+   
+   // B-Type: Branch (11000)
+   $is_b_instr = $instr[6:2] ==  5'b11000;
+   
+   // J-Type: JAL (11011)
+   $is_j_instr = $instr[6:2] ==  5'b11011;
    
    // Assert these to end simulation (before Makerchip cycle limit).
    *passed = 1'b0;
