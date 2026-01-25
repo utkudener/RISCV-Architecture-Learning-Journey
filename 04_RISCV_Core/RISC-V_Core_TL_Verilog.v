@@ -4,8 +4,6 @@
    
    m4_include_lib(['https://raw.githubusercontent.com/stevehoover/LF-Building-a-RISC-V-CPU-Core/main/lib/risc-v_shell_lib.tlv'])
 
-
-
    //---------------------------------------------------------------------------------
    // /====================\
    // | Sum 1 to 9 Program |
@@ -33,8 +31,6 @@
    m4_define(['M4_MAX_CYC'], 50)
    //---------------------------------------------------------------------------------
 
-
-
 \SV
    m4_makerchip_module   // (Expanded in Nav-TLV pane.)
    /* verilator lint_on WIDTH */
@@ -42,12 +38,26 @@
    
    $reset = *reset;
    
+   // ============================================
+   // STAGE 1: Instruction Fetch (IF)
+   // ============================================
    
-   // YOUR CODE HERE
-   // ...
-   $next_pc[31:0] = $pc[31:0] + 4'd4;
+   // 1. Program Counter (PC) Logic
+   // On reset, start at 0. Otherwise, take the next_pc value from the previous cycle (>>1).
    $pc[31:0] = $reset ? 0 : >>1$next_pc[31:0];
    
+   // 2. Next PC Calculation (Sequential Fetching)
+   // In RISC-V, instructions are 32-bits (4 Bytes) wide.
+   // We increment the current PC by 4 to fetch the next instruction address.
+   $next_pc[31:0] = $pc[31:0] + 4;
+   
+   // 3. Instruction Memory (IMem)
+   // Fetches the 32-bit instruction from the calculated $pc address.
+   // Output: $$instr[31:0]
+   `READONLY_MEM($pc, $$instr[31:0])
+   
+   
+
    
    // Assert these to end simulation (before Makerchip cycle limit).
    *passed = 1'b0;
