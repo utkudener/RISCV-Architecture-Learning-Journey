@@ -6,22 +6,31 @@ This is the main directory for the 32-bit RISC-V processor implementation. The g
 - [x] **Testbench Setup:** Sums numbers 1 to 9 using Assembly.
 - [x] **Instruction Fetch (IF):** PC logic and Instruction Memory (IMem) implemented.
 - [x] **Instruction Decode (ID):** Opcode decoding and Instruction Type identification working.
-- [ ] **Field Decoding:** (Next Step - Extracting rs1, rs2, rd, imm)
-- [ ] **ALU Implementation:**
+- [x] **Field Decoding:** Registers (rs1, rs2, rd) and Immediate ($imm) values are correctly extracted.
+- [ ] **ALU Implementation:** (Next Step)
 - [ ] **Register File Interface:**
 - [ ] **Pipelining Logic:**
 
 ## 📸 Simulation Results
 
-### 1. Instruction Decode Logic 
-The waveform below demonstrates the processor identifying instruction types based on Opcode. Notice how flags like `$is_i_instr` and `$is_r_instr` toggle High (1) depending on the fetched instruction (`$instr`).
+### 1. Field Extraction & Immediate Generation (New! 🆕)
+This waveform proves that the CPU correctly dissects the 32-bit instruction.
+- **$imm:** Correctly reconstructs constants (e.g., `0...0a` for 10).
+- **$rs1/$rs2/$rd:** Extracts register indices.
+- **Valid Flags:** Signals like `$rs1_valid` indicate when a field is relevant for the current instruction.
+
+![Field Extraction Waveform](assets/Field_Extraction_Validity_Waveform.png)
+
+### 2. Instruction Decode Logic
+The waveform below demonstrates the processor identifying instruction types based on Opcode (`$is_i_instr`, `$is_r_instr`, etc.).
 
 ![Instruction Decode Waveform](assets/Instruction_Decode_WaveForm.png)
 
-### 2. Program Counter (PC) Logic
+### 3. Program Counter (PC) Logic
 The Program Counter (`$pc`) increments by 4 bytes every cycle (`0`, `4`, `8`, `C`, `10`...) to fetch instructions sequentially.
 
 ![PC Waveform](assets/RISC-V_Core_PCWaveform.png)
+
 
 
 ---

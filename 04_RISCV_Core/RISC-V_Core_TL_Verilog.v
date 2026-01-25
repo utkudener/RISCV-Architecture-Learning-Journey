@@ -87,6 +87,48 @@
    // J-Type: JAL (11011)
    $is_j_instr = $instr[6:2] ==  5'b11011;
    
+   // ============================================
+   // STAGE 3: Field Extraction & Validity
+   // ============================================
+
+   // 1. Instruction Fields Extraction
+   // Extracting standard fields from the 32-bit instruction.
+   $rs1[4:0]    = $instr[19:15];  // Source Register 1
+   $rs2[4:0]    = $instr[24:20];  // Source Register 2
+   $rd[4:0]     = $instr[11:7];   // Destination Register
+   $funct3[2:0] = $instr[14:12];  // Function 3 (Sub-opcode)
+   $opcode[6:0] = $instr[6:0];    // Opcode
+   
+   // 2. Validity Logic
+   // Determining which fields are valid based on the instruction type.
+   
+   // rs1 is valid for R, I, S, and B types.
+   $rs1_valid = $is_r_instr || $is_i_instr || $is_s_instr || $is_b_instr;
+   
+   // rs2 is valid for R, S, and B types.
+   $rs2_valid = $is_r_instr || $is_s_instr || $is_b_instr;
+   
+   // rd is valid for R, I, U, and J types (JAL writes return address to rd).
+   $rd_valid  = $is_r_instr || $is_i_instr || $is_u_instr || $is_j_instr;
+   
+   // funct3 is valid for R, I, S, and B types (U and J types do not have funct3).
+   $funct3_valid = $is_r_instr || $is_i_instr || $is_s_instr || $is_b_instr;
+   
+   // imm is valid for all types except R-Type.
+   $imm_valid = $is_i_instr || $is_s_instr || $is_b_instr || $is_u_instr || $is_j_instr;
+   
+   // Suppress warnings for unused signals (until we implement the ALU/RegFile).
+   `BOGUS_USE($rd $rd_valid $rs1 $rs1_valid $rs2 $rs2_valid $funct3 $funct3_valid $imm_valid $opcode)
+   
+   // 3. Immediate Generation
+   // Constructing the 32-bit immediate value based on instruction type.
+   $imm[31:0] = $is_i_instr ? { {21{$instr[31]}}, $instr[30:20] } :
+                $is_s_instr ? { {21{$instr[31]}}, $instr[30:25], $instr[11:7] } :
+                $is_b_instr ? { {20{$instr[31]}}, $instr[7], $instr[30:25], $instr[11:8], 1'b0 } :
+                $is_u_instr ? { $instr[31:12], 12'b0 } :
+                $is_j_instr ? { {12{$instr[31]}}, $instr[19:12], $instr[20], $instr[30:21], 1'b0 } :
+                              32'b0; // Default case
+   
    // Assert these to end simulation (before Makerchip cycle limit).
    *passed = 1'b0;
    *failed = *cyc_cnt > M4_MAX_CYC;
