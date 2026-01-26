@@ -43,98 +43,130 @@
    // ============================================
    
    // 1. Program Counter (PC) Logic
-   // On reset, start at 0. Otherwise, take the next_pc value from the previous cycle (>>1).
+   // On reset, start at 0. Otherwise, take the next_pc value from the previous cycle.
    $pc[31:0] = $reset ? 0 : >>1$next_pc[31:0];
    
-   // 2. Next PC Calculation (Sequential Fetching)
-   // In RISC-V, instructions are 32-bits (4 Bytes) wide.
-   // We increment the current PC by 4 to fetch the next instruction address.
-   $next_pc[31:0] = $pc[31:0] + 4;
-   
-   // 3. Instruction Memory (IMem)
+   // 2. Instruction Memory (IMem)
    // Fetches the 32-bit instruction from the calculated $pc address.
-   // Output: $$instr[31:0]
    `READONLY_MEM($pc, $$instr[31:0])
    
    
-// ============================================
+   // ============================================
    // STAGE 2: Instruction Decode (ID)
    // ============================================
    
    // Instruction Type Decoding
-   // Based on the RISC-V Base Opcode Map (bits [6:2]), we identify the type of instruction.
-   // We use '==?' operator for wildcard matching (where 'x' means don't care).
-
-   // U-Type: LUI (01101), AUIPC (00101)
+   // Based on the RISC-V Base Opcode Map.
    $is_u_instr = $instr[6:2] ==? 5'b0x101;
    
-   // I-Type: Load (00000), Op-Imm (00100), JALR (11001), System (11100 - covered by 001x0 logic partially or added if needed)
    $is_i_instr = $instr[6:2] ==? 5'b0000x || 
                  $instr[6:2] ==? 5'b001x0 || 
                  $instr[6:2] ==  5'b11001;
    
-   // S-Type: Store (01000)
    $is_s_instr = $instr[6:2] ==? 5'b0100x;
    
-   // R-Type: Op (01100), Op-32 (01110), AMO (01011), Op-FP (10100)
    $is_r_instr = $instr[6:2] ==? 5'b011x0 || 
                  $instr[6:2] ==  5'b01011 || 
                  $instr[6:2] ==  5'b10100;
    
-   // B-Type: Branch (11000)
    $is_b_instr = $instr[6:2] ==  5'b11000;
    
-   // J-Type: JAL (11011)
    $is_j_instr = $instr[6:2] ==  5'b11011;
    
    // ============================================
    // STAGE 3: Field Extraction & Validity
    // ============================================
 
-   // 1. Instruction Fields Extraction
-   // Extracting standard fields from the 32-bit instruction.
-   $rs1[4:0]    = $instr[19:15];  // Source Register 1
-   $rs2[4:0]    = $instr[24:20];  // Source Register 2
-   $rd[4:0]     = $instr[11:7];   // Destination Register
-   $funct3[2:0] = $instr[14:12];  // Function 3 (Sub-opcode)
-   $opcode[6:0] = $instr[6:0];    // Opcode
+   // Extraction
+   $rs1[4:0]    = $instr[19:15];
+   $rs2[4:0]    = $instr[24:20];
+   $rd[4:0]     = $instr[11:7];
+   $funct3[2:0] = $instr[14:12];
+   $opcode[6:0] = $instr[6:0];
    
-   // 2. Validity Logic
-   // Determining which fields are valid based on the instruction type.
-   
-   // rs1 is valid for R, I, S, and B types.
+   // Validity
    $rs1_valid = $is_r_instr || $is_i_instr || $is_s_instr || $is_b_instr;
-   
-   // rs2 is valid for R, S, and B types.
    $rs2_valid = $is_r_instr || $is_s_instr || $is_b_instr;
-   
-   // rd is valid for R, I, U, and J types (JAL writes return address to rd).
    $rd_valid  = $is_r_instr || $is_i_instr || $is_u_instr || $is_j_instr;
-   
-   // funct3 is valid for R, I, S, and B types (U and J types do not have funct3).
    $funct3_valid = $is_r_instr || $is_i_instr || $is_s_instr || $is_b_instr;
-   
-   // imm is valid for all types except R-Type.
    $imm_valid = $is_i_instr || $is_s_instr || $is_b_instr || $is_u_instr || $is_j_instr;
    
-   // Suppress warnings for unused signals (until we implement the ALU/RegFile).
-   `BOGUS_USE($rd $rd_valid $rs1 $rs1_valid $rs2 $rs2_valid $funct3 $funct3_valid $imm_valid $opcode)
-   
-   // 3. Immediate Generation
-   // Constructing the 32-bit immediate value based on instruction type.
+   // Immediate Generation
    $imm[31:0] = $is_i_instr ? { {21{$instr[31]}}, $instr[30:20] } :
                 $is_s_instr ? { {21{$instr[31]}}, $instr[30:25], $instr[11:7] } :
                 $is_b_instr ? { {20{$instr[31]}}, $instr[7], $instr[30:25], $instr[11:8], 1'b0 } :
                 $is_u_instr ? { $instr[31:12], 12'b0 } :
                 $is_j_instr ? { {12{$instr[31]}}, $instr[19:12], $instr[20], $instr[30:21], 1'b0 } :
-                              32'b0; // Default case
+                              32'b0;
    
-   // Assert these to end simulation (before Makerchip cycle limit).
+   // ============================================
+   // STAGE 4: Specific Instruction Decoding (ALU Control)
+   // ============================================
+
+   // Decode Bits: {funct7[5], funct3, opcode}
+   $dec_bits[10:0] = {$instr[30], $funct3, $opcode};
+   
+   // Branch Instructions
+   $is_beq  = $dec_bits ==? 11'bx_000_1100011;
+   $is_bne  = $dec_bits ==? 11'bx_001_1100011;
+   $is_blt  = $dec_bits ==? 11'bx_100_1100011;
+   $is_bge  = $dec_bits ==? 11'bx_101_1100011;
+   $is_bltu = $dec_bits ==? 11'bx_110_1100011;
+   $is_bgeu = $dec_bits ==? 11'bx_111_1100011;
+   
+   // Arithmetic Instructions
+   $is_addi = $dec_bits ==? 11'bx_000_0010011;
+   $is_add  = $dec_bits ==? 11'b0_000_0110011;
+
+   // ============================================
+   // STAGE 5: ALU Calculation & Write Back
+   // ============================================
+
+   // ALU Operations
+   $result[31:0] = $is_addi ? $src1_value + $imm :
+                   $is_add  ? $src1_value + $src2_value:
+                   32'b0;
+   
+   // Register Write Back Logic
+   // Write only if destination is valid and not x0 (x0 is always 0)
+   $wr_index[4:0] = $rd;
+   $wr_data[31:0] = $result;
+   $wr_en = $rd_valid && ($rd != 5'b0);
+   
+   // ============================================
+   // STAGE 6: Branch Logic (PC Update)
+   // ============================================
+   
+   // Branch Condition Check
+   // Note: For signed comparison (BLT, BGE), we use XOR on sign bits.
+   $taken_br = 
+       $is_beq  ? ($src1_value == $src2_value) :
+       $is_bne  ? ($src1_value != $src2_value) :
+       $is_blt  ? (($src1_value < $src2_value) ^ ($src1_value[31] != $src2_value[31])) :
+       $is_bge  ? (($src1_value >= $src2_value) ^ ($src1_value[31] != $src2_value[31])) :
+       $is_bltu ? ($src1_value < $src2_value) :
+       $is_bgeu ? ($src1_value >= $src2_value) :
+       1'b0;
+   
+   // Branch Target Calculation
+   $br_tgt_pc[31:0] = $pc + $imm;
+   
+   // Next PC Logic
+   // If branch taken, go to target. Else, increment PC by 4.
+   $next_pc[31:0] = $taken_br ? $br_tgt_pc : $pc + 4;
+   
+   
+   // Suppress warnings for unused signals
+   `BOGUS_USE($rd $rd_valid $rs1 $rs1_valid $rs2 $rs2_valid $funct3 $funct3_valid $imm_valid $opcode $is_beq $is_bne $is_blt $is_bge $is_bltu $is_bgeu $is_addi $is_add)
+   
+   // Simulation End Condition
    *passed = 1'b0;
    *failed = *cyc_cnt > M4_MAX_CYC;
    
-   //m4+rf(32, 32, $reset, $wr_en, $wr_index[4:0], $wr_data[31:0], $rd_en1, $rd_index1[4:0], $rd_data1, $rd_en2, $rd_index2[4:0], $rd_data2)
-   //m4+dmem(32, 32, $reset, $addr[4:0], $wr_en, $wr_data[31:0], $rd_en, $rd_data)
+   // Register File Instantiation
+   m4+rf(32, 32, $reset, $wr_en, $wr_index[4:0], $wr_data[31:0], 
+         $rs1_valid, $rs1[4:0], $src1_value, $rs2_valid, $rs2[4:0], $src2_value)
+   
    m4+cpu_viz()
 \SV
    endmodule
