@@ -34,6 +34,11 @@ After knowing the type, we dissect the 32-bit instruction to find the operands.
 - **Valid Flags:** Logic gates (`$rs1_valid`, etc.) determine which fields are relevant for the current instruction.
 
 ![Field Extraction Waveform](assets/Field_Extraction_Validity_Waveform.png)
+<<<<<<< HEAD
+
+---
+=======
+>>>>>>> e69d9f114769350af6cbef4538387f0b27e09eb5
 
 ---
 

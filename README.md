@@ -19,4 +19,8 @@ This repository documents my journey of designing a RISC-V CPU Core from scratch
 ## ⚖️ Acknowledgement & License
 This project is based on the **"Building a RISC-V CPU Core"** course by **Steve Hoover**. The initial shell code, macro libraries, and visualization tools are provided by the course materials. 
 
+<<<<<<< HEAD
 My work focuses on implementing the logic, data path, and control signals within this provided framework.
+=======
+My work focuses on implementing the logic, data path, and control signals within this provided framework.
+>>>>>>> e69d9f114769350af6cbef4538387f0b27e09eb5
