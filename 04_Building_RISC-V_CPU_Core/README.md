@@ -6,65 +6,52 @@ The development process follows a "build-from-scratch" approach, starting from a
 
 ---
 
-## 🛠️ Current Status: Stage 3 (Decode & Field Extraction)
+## 🛠️ Current Status: Stage 4 (Register File Read & Control Decoding)
 
-We have successfully implemented the complete Decode Logic. The processor can now identify instruction types and extract all necessary fields (Source/Destination Registers, Immediates, Opcode).
+We have successfully connected the **Register File** and verified the read operations. The processor can now use the decoded register indices (`rs1`, `rs2`) to retrieve values from the register file. Additionally, specific instruction decoding logic (`ADD`, `ADDI`, `Branch`) has been implemented.
 
 | Stage | Status | Description |
 | :--- | :---: | :--- |
 | **1. Project Shell & PC Logic** | ✅ | **Project structure setup and basic Program Counter implementation.** |
 | **2. Instruction Fetch** | ✅ | **Connecting PC to IMem and fetching instructions.** |
-| **3. Decode Logic** | ✅ | **Instruction Type Parsing & Field Extraction (rs1, rs2, rd, imm).** |
-| **4. ALU Operations** | ⏳ | Arithmetic and Logic computations. |
-| **5. Branching & Control** | ⏳ | Control flow logic and decision making. |
+| **3. Decode Logic** | ✅ | **Instruction Type Parsing & Field Extraction.** |
+| **4. Register File Read** | ✅ | **Reading data from Source Registers (rs1, rs2) & Control Signals.** |
+| **5. ALU Operations** | ⏳ | Arithmetic and Logic computations. |
 | **6. Pipelining** | ⏳ | Parallel execution stages for performance. |
 
 ---
 
 ## 🧩 Implemented Logic Description
 
-### 1. Project Shell & PC
-The foundation of the processor. The **Program Counter (PC)** serves as the address pointer, resetting to `0` and incrementing by `4` bytes each cycle to traverse the instruction memory.
+### 1. Instruction Fetch & Decode
+The processor fetches 32-bit instructions from memory and decodes them to identify:
+* **Instruction Type:** (R, I, S, B, U, J)
+* **Fields:** Opcode, Source Registers (`rs1`, `rs2`), Destination Register (`rd`), and Immediates (`imm`).
+* **Control Signals:** Logic to detect specific instructions like `ADDI`, `ADD`, `BEQ`, `BNE`, etc.
 
-### 2. Instruction Memory (IMem)
-The Instruction Memory acts as the bridge between the "address" (PC) and the "operation" (Instruction). It fetches the 32-bit machine code corresponding to the current PC address.
-
-### 3. Decode Logic & Field Extraction
-This stage transforms the raw 32-bit instruction into meaningful control signals and data indices:
-* **Type Parsing:** Determines if the instruction is R-Type, I-Type, S-Type, B-Type, U-Type, or J-Type.
-* **Field Extraction:** Slices specific bits from the instruction to identify:
-    * **Opcode:** The primary operation identifier.
-    * **rd (Destination Register):** Where the result will be saved.
-    * **rs1 / rs2 (Source Registers):** Which registers hold the input data.
-    * **funct3 / funct7:** Secondary operation identifiers.
-    * **Immediate (imm):** Constant values embedded directly in the instruction (constructed differently based on instruction type).
+### 2. Register File (Read Port)
+The Register File is the processor's short-term memory array (32 x 32-bit).
+* **Connectivity:** The decoded `$rs1` and `$rs2` indices are connected to the Register File's read inputs.
+* **Read Enable:** The `$rs1_valid` and `$rs2_valid` signals ensure we only read from the register file when the instruction type requires it.
+* **Output:** The Register File outputs `$src1_value` and `$src2_value`. These signals carry the actual numbers stored in the registers.
 
 ---
 
 ## 📸 Simulation & Verification
 
-The functionality of the core is verified using waveform simulations. Below are the results for the completed stages.
+The functionality of the core is verified using waveform simulations.
 
-### Stage 1: Program Counter Verification
-The waveform below demonstrates the Program Counter logic.
-* **Observation:** The Next-PC signal (`$next_pc`) and current PC (`$pc`) increment by 4 on each rising edge of the clock (Hexadecimal: `0, 4, 8, C...`).
-
-![PC Waveform](assets/PC_waveform.png)
-
-### Stage 2: Instruction Fetch Verification
-The waveform below confirms that instructions are being correctly fetched from memory.
-* **Observation:** As the `$pc` (address) changes, the `$instr` (data) signal updates instantly with the corresponding machine code.
-
-![IMem Waveform](assets/IMem_waveform.png)
-
-### Stage 3: Decode & Field Extraction Verification
+### Field Extraction Verification
 The waveform below validates that the processor correctly slices the instruction into its components.
-* **Observation:**
-    * **Types:** Signals like `$is_i_instr` correctly identify the instruction format.
-    * **Fields:** The waveform clearly shows the extraction of register indices (e.g., `$rd`, `$rs1`, `$rs2`) and immediate values (`$imm`). For instance, specific destination register values like `0e` (14) or `0c` (12) are visible on the `$rd` line, matching the assembly code logic.
+* **Observation:** Signals like `$rs1`, `$rs2`, and `$imm` are correctly extracted from the instruction `$instr`.
 
-![Decode Logic Waveform](assets/Decode_Logic_waveform.png)
 ![Field Extraction Waveform](assets/Decode_Logic_InstructionField_waveform.png)
+
+### Register File Read Verification
+The waveform below confirms that the Register File is correctly reading values based on the input indices.
+* **Observation:** In the test environment, registers are initialized with values equal to their index (e.g., Reg x13 holds value 13). The waveform shows that when **`$rs1`** is `0d` (13), the output **`$src1_value`** correctly becomes `0000_000d`. Similarly, when **`$rs2`** is `0e` (14), **`$src2_value`** reads `0000_000e`. This proves the read ports are wired correctly.
+
+![Register File Read Waveform](assets/Register_File_Read.png)
 
 ---
 
