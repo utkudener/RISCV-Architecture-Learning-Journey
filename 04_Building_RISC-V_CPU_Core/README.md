@@ -1,38 +1,50 @@
 # 32-Bit RISC-V CPU Core Development 🚀
 
-This repository documents the step-by-step construction of a 32-bit RISC-V processor core. The project is designed using **TL-Verilog** on the Makerchip platform and aims to build a fully functional processor compliant with the **RV32I Base Integer Instruction Set**.
+This repository documents the construction of a 32-bit RISC-V processor core. The project is built from scratch using **TL-Verilog** on the Makerchip platform and implements a functional subset of the **RV32I Base Integer Instruction Set**.
 
-The development process follows a "build-from-scratch" approach, starting from an empty shell and progressively adding logic stages such as Instruction Fetch, Decode, ALU, and Pipelining.
+The core is capable of executing a test program (Sum 1 to 9), performing arithmetic operations, memory access, and conditional branching.
 
 ---
 
-## 🛠️ Current Status: Stage 6 (Register File Write-Back)
+## 🏆 Current Status: Core Logic Completed
 
-We have successfully closed the loop! The processor now performs **Write-Back**, meaning the results calculated by the ALU are written back into the Register File. The processor can now execute sequential instructions where the result of one operation feeds into the next.
+We have successfully implemented the Control Flow (Branching) logic and verified the entire core using an automated testbench. The processor correctly executes the "Sum 1 to 9" assembly program and passes the verification check.
 
 | Stage | Status | Description |
 | :--- | :---: | :--- |
-| **1. Project Shell & PC Logic** | ✅ | **Project structure setup and basic Program Counter implementation.** |
-| **2. Instruction Fetch** | ✅ | **Connecting PC to IMem and fetching instructions.** |
-| **3. Decode Logic** | ✅ | **Instruction Type Parsing & Field Extraction.** |
-| **4. Register File Read** | ✅ | **Reading data from Source Registers (rs1, rs2).** |
-| **5. ALU Operations** | ✅ | **Arithmetic computations (ADD, ADDI) & Result generation.** |
-| **6. Register File Write** | ✅ | **Writing ALU results back to Destination Register (rd).** |
-| **7. Pipelining** | ⏳ | Parallel execution stages for performance. |
+| **1. Project Shell & PC Logic** | ✅ | **PC Reset & Increment Logic.** |
+| **2. Instruction Fetch** | ✅ | **Instruction Memory (IMem) Connection.** |
+| **3. Decode Logic** | ✅ | **Type Parsing (R, I, S, B, U, J) & Field Extraction.** |
+| **4. Register File Read** | ✅ | **Reading Source Operands (rs1, rs2).** |
+| **5. ALU Operations** | ✅ | **Arithmetic Logic Unit (ADD, ADDI, Branch Checks).** |
+| **6. Register File Write** | ✅ | **Write-Back Logic (Result -> rd).** |
+| **7. Branching & Control** | ✅ | **Conditional Branching (BEQ, BNE, BLT...) & PC Updates.** |
 
 ---
 
-## 🧩 Implemented Logic Description
+## 🧩 Architecture Overview
 
-### 1. Instruction Fetch & Decode
-The processor fetches 32-bit instructions from memory and decodes them to identify the Operation Type, Source Registers, and Destination Register.
+### 1. Control Flow & Branching
+The processor determines the next instruction address based on branch conditions:
+* **Condition Check:** The ALU evaluates conditions (e.g., `x1 < x2` for `BLT`).
+* **Target Calculation:** Computes `Target PC = Current PC + Immediate` value.
+* **Next-PC Logic:** If the branch is taken (`$taken_br`), the PC updates to the Target PC; otherwise, it increments by 4.
 
-### 2. Register File (Read & Write)
-The Register File is the central storage unit.
-* **Read:** Retrieves values from source registers (`rs1`, `rs2`) to feed the ALU.
-* **Write (New):** Takes the calculated result from the ALU and saves it back into the destination register (`rd`).
-    * **Write Data:** Connected to the ALU `$result`.
-    * **Write Enable:** Controlled by `$rd_valid`, ensuring only relevant instructions modify the memory.
+### 2. Arithmetic Logic Unit (ALU)
+Handles integer arithmetic and logical comparisons.
+* **Operations:** ADD, ADDI.
+* **Branch Support:** BEQ, BNE, BLT, BGE, BLTU, BGEU.
 
-### 3. Arithmetic Logic Unit (ALU)
-Performs arithmetic operations (ADD, ADDI) and generates the `$result` signal, which is now wired back to the Register
+### 3. Register File (32x32-bit)
+* **Read Ports:** Two asynchronous read ports for source operands.
+* **Write Port:** Synchronous write-back for ALU results.
+
+---
+
+## 🧪 Verification & Testbench
+
+The core functionality is verified using an embedded assembly program that sums numbers from 1 to 9.
+
+### Automated Testbench (`m4+tb`)
+We utilized the `m4+tb()` macro to assert pass/fail conditions automatically.
+* **Success Condition:** The program calculates the sum (45), subtracts the expected value (44), and stores the result (1) in register `x30`.
