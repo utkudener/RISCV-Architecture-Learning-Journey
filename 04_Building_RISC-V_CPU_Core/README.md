@@ -6,18 +6,19 @@ The development process follows a "build-from-scratch" approach, starting from a
 
 ---
 
-## 🛠️ Current Status: Stage 4 (Register File Read & Control Decoding)
+## 🛠️ Current Status: Stage 5 (ALU & Execute)
 
-We have successfully connected the **Register File** and verified the read operations. The processor can now use the decoded register indices (`rs1`, `rs2`) to retrieve values from the register file. Additionally, specific instruction decoding logic (`ADD`, `ADDI`, `Branch`) has been implemented.
+We have successfully implemented the **Arithmetic Logic Unit (ALU)**. The processor can now perform arithmetic operations (specifically ADD and ADDI) on data retrieved from the Register File and calculate valid results.
 
 | Stage | Status | Description |
 | :--- | :---: | :--- |
 | **1. Project Shell & PC Logic** | ✅ | **Project structure setup and basic Program Counter implementation.** |
 | **2. Instruction Fetch** | ✅ | **Connecting PC to IMem and fetching instructions.** |
 | **3. Decode Logic** | ✅ | **Instruction Type Parsing & Field Extraction.** |
-| **4. Register File Read** | ✅ | **Reading data from Source Registers (rs1, rs2) & Control Signals.** |
-| **5. ALU Operations** | ⏳ | Arithmetic and Logic computations. |
-| **6. Pipelining** | ⏳ | Parallel execution stages for performance. |
+| **4. Register File Read** | ✅ | **Reading data from Source Registers (rs1, rs2).** |
+| **5. ALU Operations** | ✅ | **Arithmetic computations (ADD, ADDI) & Result generation.** |
+| **6. Register File Write** | ⏳ | Writing results back to memory. |
+| **7. Pipelining** | ⏳ | Parallel execution stages for performance. |
 
 ---
 
@@ -25,15 +26,20 @@ We have successfully connected the **Register File** and verified the read opera
 
 ### 1. Instruction Fetch & Decode
 The processor fetches 32-bit instructions from memory and decodes them to identify:
-* **Instruction Type:** (R, I, S, B, U, J)
-* **Fields:** Opcode, Source Registers (`rs1`, `rs2`), Destination Register (`rd`), and Immediates (`imm`).
-* **Control Signals:** Logic to detect specific instructions like `ADDI`, `ADD`, `BEQ`, `BNE`, etc.
+* **Instruction Type:** Categorizes instructions into formats like R-Type, I-Type, S-Type, etc.
+* **Fields:** Extracts critical data such as Opcode, Source Registers, Destination Register, and Immediate values.
+* **Control Signals:** Identifies specific operations (e.g., ADDI, ADD, Branches) to direct the processor's actions.
 
 ### 2. Register File (Read Port)
-The Register File is the processor's short-term memory array (32 x 32-bit).
-* **Connectivity:** The decoded `$rs1` and `$rs2` indices are connected to the Register File's read inputs.
-* **Read Enable:** The `$rs1_valid` and `$rs2_valid` signals ensure we only read from the register file when the instruction type requires it.
-* **Output:** The Register File outputs `$src1_value` and `$src2_value`. These signals carry the actual numbers stored in the registers.
+The Register File acts as the processor's internal storage.
+* **Functionality:** Using the decoded source register indices, the processor retrieves the stored values.
+* **Optimization:** Read operations are only performed when the instruction type requires them (e.g., valid source registers).
+
+### 3. Arithmetic Logic Unit (ALU)
+The ALU is the computation engine of the core. It processes inputs based on the instruction type:
+* **ADDI Operation:** Adds a value from a source register to an immediate constant.
+* **ADD Operation:** Adds values from two source registers.
+* **Result Generation:** The computed value is output as a result signal, ready to be used in subsequent stages or written back to memory.
 
 ---
 
@@ -41,17 +47,17 @@ The Register File is the processor's short-term memory array (32 x 32-bit).
 
 The functionality of the core is verified using waveform simulations.
 
-### Field Extraction Verification
-The waveform below validates that the processor correctly slices the instruction into its components.
-* **Observation:** Signals like `$rs1`, `$rs2`, and `$imm` are correctly extracted from the instruction `$instr`.
+### Decode & Control Verification
+The waveform below shows the active control signals and extracted immediate values. It confirms that the decoder correctly identifies the instruction type and prepares the necessary data for the ALU.
 
-![Field Extraction Waveform](assets/Decode_Logic_InstructionField_waveform.png)
+![ALU Control Waveform](assets/ALU_Waveform1.png)
 
-### Register File Read Verification
-The waveform below confirms that the Register File is correctly reading values based on the input indices.
-* **Observation:** In the test environment, registers are initialized with values equal to their index (e.g., Reg x13 holds value 13). The waveform shows that when **`$rs1`** is `0d` (13), the output **`$src1_value`** correctly becomes `0000_000d`. Similarly, when **`$rs2`** is `0e` (14), **`$src2_value`** reads `0000_000e`. This proves the read ports are wired correctly.
+### ALU Calculation Verification
+The waveform below provides proof of correct arithmetic execution.
+* **Observation:** The signals representing source register values provide inputs to the ALU. The result signal updates instantly with the sum.
+* **Example Case:** As seen in the trace, when the input values are `13` and `14`, the result correctly becomes `27`. This confirms the addition logic is functioning correctly.
 
-![Register File Read Waveform](assets/Register_File_Read.png)
+![ALU Result Waveform](assets/ALU_Waveform2.png)
 
 ---
 
