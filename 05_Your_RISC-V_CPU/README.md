@@ -1,81 +1,67 @@
-# 32-Bit RISC-V CPU Core - Phase 2: Full ISA Compliance 🛠️
+# 32-Bit RISC-V CPU Core - Final Phase: Memory & Complete ISA 🏆
 
-Welcome to **Phase 2** of the RISC-V Processor Development. In this phase, we expand upon the foundational architecture established in Phase 1 to support the complete **RV32I (RISC-V 32-bit Integer)** instruction set standard.
-
-This document records the step-by-step transformation of the core from a "simple summation engine" into a fully compliant processor.
+This directory contains the source code and documentation for the **Final Phase** of the RISC-V processor development. In this milestone, we integrated **Data Memory (DMem)** support, effectively transforming the core into a fully functional, Turing-complete RISC-V processor compliant with the **RV32I** standard.
 
 ---
 
-## 🚀 Progress Report: Step-by-Step Development
+## 🎯 Final Goal: The "Load/Store" Challenge
 
-Phase 2 development is executed through the following technical steps:
+The objective of this final phase was to implement memory access instructions (`LW` and `SW`) and pass the complete **RISC-V Test Suite**.
 
-### Step 1: Upgrading the Test Environment (`m4_test_prog`)
-We have replaced the custom "Sum 1 to 9" loop program from Phase 1 with the **Official RISC-V Test Suite**.
-* **Change:** Removed manual `m4_asm` lines and instantiated the `m4_test_prog()` macro.
-* **Objective:** To rigorously validate not just `ADD`, but every single instruction (SUB, XOR, JAL, Shift, etc.) in isolation.
-* **Success Criteria:** Upon completion, all registers from `x5` to `x30` must contain the value **`1`**.
+To achieve this, the architecture was finalized with:
+1.  **Data Memory (DMem):** A 32-bit word-addressable memory for data storage.
+2.  **Load Logic (`LW`):** Reading data from DMem and writing it back to the Register File.
+3.  **Store Logic (`SW`):** Writing data from Source Register 2 (`rs2`) into DMem.
+4.  **Write-Back Mux:** Selecting between ALU results and Memory data for the destination register.
 
-### Step 2: Expanding Decode Logic
-To allow the processor to recognize the full RV32I set, we completely overhauled the **Decode Logic**. The core now identifies the following instruction groups:
-
-* **Arithmetic & Logical (Immediate - I-Type):**
-    * `ADDI`: Add Immediate.
-    * `ANDI`, `ORI`, `XORI`: Logical AND, OR, XOR with constants.
-    * `SLTI`, `SLTIU`: Set Less Than Immediate (Signed/Unsigned).
-
-* **Arithmetic & Logical (Register - R-Type):**
-    * `ADD`: Add Registers.
-    * `SUB`: Subtract Registers (**New!**).
-    * `AND`, `OR`, `XOR`: Logical operations between registers.
-    * `SLT`, `SLTU`: Set Less Than (Signed/Unsigned).
-
-* **Shift Operations:**
-    * `SLL / SLLI`: Shift Left Logical.
-    * `SRL / SRLI`: Shift Right Logical.
-    * `SRA / SRAI`: Shift Right Arithmetic (preserves sign bit).
-
-* **Jump & Upper Immediate:**
-    * `LUI`: Load Upper Immediate.
-    * `AUIPC`: Add Upper Immediate to PC.
-    * `JAL`: Jump And Link (Function Call).
-    * `JALR`: Jump And Link Register (Return/Computed Jump).
-
-* **Branch (B-Type):**
-    * `BEQ`, `BNE`: Branch if Equal / Not Equal.
-    * `BLT`, `BGE`: Branch if Less Than / Greater Equal.
+**Current Status:** 🚀 **FULLY VERIFIED & PASSED**
 
 ---
 
-## 🛠️ Technical Details: How It Works
+## 🧩 Architecture Breakdown & Verification Proofs
 
-### Decode Logic
-The decoder parses the incoming 32-bit `$instruction` signal to generate specific control flags (`$is_add`, `$is_jal`, `$is_lui`, etc.).
-* **Method:** We utilize bit masking (`==?`) to check the Opcode, Funct3, and Funct7 fields against the RISC-V specifications.
+Below is the step-by-step verification of the final core logic, demonstrating the successful execution of Arithmetic, Control Flow, and Memory operations.
 
-### Verification Strategy
-The new test program operates on the following logic:
-1.  **Execute:** The CPU attempts to execute an instruction (e.g., `SUB x5, x6, x7`).
-2.  **Compare:** The program calculates the result and XORs it with the *expected* result.
-3.  **Validate:**
-    * If the result is **Correct**, the program writes **`1`** to the destination register.
-    * If **Incorrect**, it writes a different value.
-4.  **Visual Check:** We inspect the Register File in the Makerchip Visualizer (VIZ). A column of green `1`s indicates a passing test suite.
+### 1. Final Verification: "Passed !!!"
+The core successfully executed the entire test suite.
+* **Observation:** The visualizer displays the green **"Passed !!!"** message.
+* **Data Memory:** The "DMem" column is visible and populated, confirming that `SW` instructions successfully wrote data to memory.
+* **Registers:** Registers `x1` through `x30` contain the validation value `1`.
+
+![Final Success](assets/Final_Viz.png)
+*Figure 1: The "Passed" state showing active Data Memory and Register File.*
+
+### 2. Instruction Processing
+The processor fetches complex instructions from the official test suite. The image below shows the Instruction Memory (IMem) loaded with the program code, including the final Load/Store tests.
+
+![Test Program](assets/Test_prog_viz.png)
+*Figure 2: The RISC-V Test Suite loaded into IMem.*
+
+### 3. Logic & Design Reference
+To handle the complexity of the full ISA (Logic, Shifts, Comparisons), the ALU and Decode logic were implemented following strict architectural formulas. This reference diagram served as the blueprint for our signal routing.
+
+![Logic Reference](assets/ALU_Referrence.png)
+*Figure 3: Reference logic used for ALU and Branch implementation.*
 
 ---
 
-## 📅 Next Steps (To-Do List)
+## 🛠️ Technical Implementation Summary
 
-Currently, the **Decode** (Recognition) logic is complete, but the **ALU** (Execution) logic does not yet support all these operations. The roadmap is as follows:
-
-1.  [ ] **ALU Expansion:** Wire the newly decoded signals (`$is_sub`, `$is_and`, etc.) into the ALU multiplexer to perform the actual calculations.
-2.  [ ] **Data Memory:** Implement `LW` (Load Word) and `SW` (Store Word) logic.
-3.  [ ] **Final Verification:** Confirm that all test registers contain `1`.
+| Stage | Feature | Implementation Details |
+| :--- | :--- | :--- |
+| **Decode** | Full Recognition | Identifies R, I, S, B, U, J type instructions. |
+| **ALU** | Advanced Math | `ADD`, `SUB`, `AND/OR/XOR`, `SLT/SLTU`, `SLL/SRL/SRA`. |
+| **Control** | Jumps & Branches | `BEQ/BNE/BLT...`, `JAL` (Func Call), `JALR` (Return). |
+| **Memory** | Load / Store | `LW` (Load Word) and `SW` (Store Word) with alignment. |
 
 ---
 
-## 📂 File Information
+## 📂 File Structure
 
-* **File:** `riscv_core.tlv`
-* **Language:** TL-Verilog
-* **Architecture:** RISC-V RV32I v2.2
+* **`riscv_core.tlv`**: The final, fully functional source code of the processor.
+* **`assets/`**: Verification images and logic references.
+* **`lib/`**: RISC-V shell libraries.
+
+---
+
+*Project Completed. The RISC-V Core is now fully operational.*
