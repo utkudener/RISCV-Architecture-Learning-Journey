@@ -23,6 +23,8 @@
    $pc[31:0] = >>1$next_pc;
    $next_pc[31:0] = $reset ? 0:
                     $taken_br ? $br_tgt_pc[31:0]:
+                    $is_jal ? $br_tgt_pc[31:0]:
+                    $is_jalr ? $jalr_tgt_pc[31:0]:
                     $pc[31:0] + 3'b100;
 
    // Instruction Memory (IMem):
@@ -114,6 +116,8 @@
    $is_or    = $dec_bits ==? 11'b0_110_0110011;
    $is_and   = $dec_bits ==? 11'b0_111_0110011;
    
+   // Load Instruction (LW - Load Word)
+   $is_load = $dec_bits ==? 11'bx_xxx_0000011;
    
    //SLTU and SLTI (set if less than, unsigned) results:
    $sltu_rslt[31:0] = {31'b0, $src1_value < $src2_value};
@@ -167,6 +171,9 @@
       $is_sra  ? $sra_rslt :
       $is_srai ? $srai_rslt :
       
+      //Load Store Instructions
+     ($is_load / $is_s_instr) ? $rs1 + $imm:
+      
       // Default
       32'b0;
    
@@ -180,6 +187,9 @@
                1'b0;
                
    $br_tgt_pc[31:0] = $pc + $imm;
+   $jalr_tgt_pc[31:0] = $src1_value + $imm;
+   
+   
    
    
    // Assert these to end simulation (before Makerchip cycle limit).
@@ -187,8 +197,9 @@
    m4+tb()
    *failed = *cyc_cnt > M4_MAX_CYC;
    
-   m4+rf(32, 32, $reset, $rd_valid, $rd, $result[31:0], $rs1_valid, $rs1[4:0], $src1_value, $rs2_valid, $rs2[4:0], $src2_value)
-   //m4+dmem(32, 32, $reset, $addr[4:0], $wr_en, $wr_data[31:0], $rd_en, $rd_data)
+   // Eğer Load işlemiyse hafızadan gelen veriyi ($ld_data), değilse ALU sonucunu ($result) yaz.
+   m4+rf(32, 32, $reset, $rd_valid, $rd, $is_load ? $ld_data : $result[31:0], $rs1_valid, $rs1[4:0], $src1_value, $rs2_valid, $rs2[4:0], $src2_value)
+   m4+dmem(32, 32, $reset, $result[6:2], $is_s_instr, $src2_value, $is_load, $ld_data)
    m4+cpu_viz()
 \SV
    endmodule
